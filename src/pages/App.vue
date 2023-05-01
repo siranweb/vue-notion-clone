@@ -2,18 +2,12 @@
 import { ref } from 'vue';
 import Line from '@/shared/components/Line.vue';
 
+const localStorage = window.localStorage;
+
 interface LineData {
   id: number;
   content: string;
 }
-
-const title = ref<string>('Hello, world!');
-const lines = ref<LineData[]>([
-  {
-    id: 1,
-    content: 'Change me'
-  }
-]);
 
 function* createEmptyLineObject(id: number): Generator<LineData, any, LineData> {
   let lastId = id;
@@ -25,10 +19,16 @@ function* createEmptyLineObject(id: number): Generator<LineData, any, LineData> 
   }
 }
 
-const emptyLineGenerator = createEmptyLineObject(1);
+const emptyLineGenerator = createEmptyLineObject(0);
+
+const title = ref<string>('Hello, world!');
+const storedLines = JSON.parse(localStorage.getItem('lines') as string) as LineData[] ?? [emptyLineGenerator.next().value];
+const lines = ref<LineData[]>(storedLines);
 
 const saveLine = (id: number, content: string) => {
-  lines.value[id].content = content;
+  const index = lines.value.findIndex(elem => elem.id === id);
+  lines.value[index].content = content;
+  localStorage.setItem('lines', JSON.stringify(lines.value));
 }
 
 const addNextLine = (id: number) => {
