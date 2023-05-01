@@ -3,58 +3,67 @@ import { ref } from 'vue';
 import Line from '@/shared/components/Line.vue';
 
 interface LineData {
-  markdown: string;
+  id: number;
+  content: string;
 }
 
 const title = ref<string>('Hello, world!');
-const editableLineId = ref<null | number>(null);
-let lastLineId = ref<number>(2);
-const lines = ref<Record<string, LineData>>({
-  1: {
-    markdown: 'Example 1',
-  },
-  2: {
-    markdown: 'Example 2',
-  },
-});
+const lines = ref<LineData[]>([
+  {
+    id: 1,
+    content: 'Change me'
+  }
+]);
 
-const addLine = () => {
-  lines.value[++lastLineId.value] = {
-    markdown: 'Line ' + lastLineId.value,
+function* createEmptyLineObject(id: number): Generator<LineData, any, LineData> {
+  let lastId = id;
+  while (true) {
+    yield {
+      id: ++lastId,
+      content: 'Change me',
+    };
   }
 }
 
-const stopEdit = () => {
-  editableLineId.value = null;
+const emptyLineGenerator = createEmptyLineObject(1);
+
+const saveLine = (id: number, content: string) => {
+  lines.value[id].content = content;
 }
 
-const editButtonClb = (id: number) => {
-  editableLineId.value = id;
+const addNextLine = (id: number) => {
+  const index = lines.value.findIndex(elem => elem.id === id);
+  lines.value = [
+    ...lines.value.slice(0, index + 1),
+    emptyLineGenerator.next().value,
+    ...lines.value.slice(index + 1)
+  ]
 }
 
-const saveButtonClb = (id: number, markdown: string) => {
-  lines.value[id].markdown = markdown;
-  stopEdit();
+const deleteLine = (id: number) => {
+  const index = lines.value.findIndex(elem => elem.id === id);
+  lines.value.splice(index, 1);
+  if (!lines.value.length) {
+    lines.value.push(emptyLineGenerator.next().value);
+  }
 }
 
 </script>
 
 <template>
   <div class="container">
-    {{ lines }}
     <div class="page">
       <h1>{{ title }}</h1>
       <Line
-        v-for="(line, id) in lines"
-        :key="+id"
-        :id="+id"
-        :markdown="line.markdown"
-        :edit-mode="+id === editableLineId"
-        @edit="editButtonClb"
-        @save="saveButtonClb"
+        v-for="line in lines"
+        :key="line.id"
+        :id="line.id"
+        :value="line.content"
+        @save="saveLine"
+        @add-next="addNextLine"
+        @delete="deleteLine"
       />
     </div>
-    <button @click="addLine">Add</button>
   </div>
 </template>
 

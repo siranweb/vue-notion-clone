@@ -1,72 +1,47 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { marked } from 'marked';
+import { ref } from 'vue';
 
 const props = defineProps<{
   id: number;
-  markdown: string;
-  editMode: boolean;
+  value: string;
 }>()
 
-const emit = defineEmits<{
-  (e: 'edit', id: number): void;
-  (e: 'save', id: number, markdown: string): void;
+defineEmits<{
+  (e: 'save', id: number, content: string): void;
+  (e: 'addNext', id: number): void;
+  (e: 'delete', id: number): void;
 }>();
 
-const content = computed(() => marked.parse(props.markdown));
-const markdownTemp = ref(props.markdown);
-
-const editArea = ref<HTMLDivElement>();
-const onEdit = () => {
-  emit('edit', props.id);
-  setTimeout(() => {
-    const elem = editArea.value as HTMLDivElement;
-    elem.focus();
-    });
-}
+const content = ref(props.value);
 
 </script>
 
 <template>
   <div class="line">
-    <template v-if="!editMode">
-      <button @click="onEdit">Edit</button>
-      <div v-html="content" class="field" @dblclick="onEdit" />
-    </template>
-    <template v-else>
-      <button @click="$emit('save', id, markdownTemp)">Save</button>
-      <div
-        ref="editArea"
-        class="edit"
-        @input="markdownTemp = $event.target.innerText"
-        @keydown.enter="$emit('save', id, markdownTemp)"
-        contenteditable
-      >{{ markdown }}</div>
-    </template>
+    <button class="add" @click="$emit('addNext', id)">+</button>
+    <button class="delete" @click="$emit('delete', id)">-</button>
+    <editor @change="$emit('save', id, content)" v-model="content" :inline="true" initial-value=" " tag-name="div" />
   </div>
 </template>
 
 <style scoped lang="scss">
-.line {
-  & > button {
-    width: 60px;
+  .line {
+    display: flex;
+    align-items: center;
   }
-  & > * {
-    display: inline-block;
+
+  :deep(.mce-content-body) {
+    margin-left: 10px;
   }
-}
 
-.field, .edit {
-  padding: 2px 10px;
-}
+  .add, .delete {
+    height: 30px;
+    width: 30px;
+  }
+</style>
 
-:deep(.field *) {
-  margin: 0;
-  padding: 0;
-}
-
-.edit {
-  outline: none;
-  border-bottom: 1px solid #8a8a8a;
+<style>
+.tox-notifications-container {
+    display: none !important;
 }
 </style>
